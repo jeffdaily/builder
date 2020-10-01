@@ -1,4 +1,4 @@
-FROM nvidia/cuda:9.2-devel-centos7 as base
+FROM centos:7 as base
 
 ENV LC_ALL en_US.UTF-8
 ENV LANG en_US.UTF-8
@@ -46,6 +46,13 @@ RUN bash ./install_cuda.sh 10.2
 FROM cuda as cuda110
 RUN bash ./install_cuda.sh 11.0
 
+# Install ROCM
+FROM base as rocm
+ADD ./common/install_rocm.sh install_rocm.sh
+
+FROM rocm as rocm38
+RUN bash ./install_rocm.sh 3.8
+
 # Install MNIST test data
 FROM base as mnist
 ADD ./common/install_mnist.sh install_mnist.sh
@@ -59,6 +66,7 @@ COPY --from=cuda92   /usr/local/cuda-9.2  /usr/local/cuda-9.2
 COPY --from=cuda101  /usr/local/cuda-10.1 /usr/local/cuda-10.1
 COPY --from=cuda102  /usr/local/cuda-10.2 /usr/local/cuda-10.2
 COPY --from=cuda110  /usr/local/cuda-11.0 /usr/local/cuda-11.0
+COPY --from=rocm38   /opt/rocm-3.8.0      /opt/rocm/3.8.0
 ADD ./java/jni.h     /usr/local/include/jni.h
 ENV PATH /opt/conda/bin:$PATH
 COPY --from=mnist  /usr/local/mnist /usr/local/mnist
