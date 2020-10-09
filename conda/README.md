@@ -10,8 +10,12 @@
 
 ```sh
 cd ..
-docker build -t soumith/conda-cuda -f conda/Dockerfile .
-docker push soumith/conda-cuda
+# for conda-cuda image
+DOCKER_BUILDKIT=1 docker build -t pytorch/conda-cuda --target final_cuda -f conda/Dockerfile .
+docker push pytorch/conda-cuda
+# for conda-rocm image
+DOCKER_BUILDKIT=1 docker build -t pytorch/conda-rocm --target final_rocm -f conda/Dockerfile .
+docker push pytorch/conda-rocm
 ```
 
 ## building pytorch / torchvision etc.
