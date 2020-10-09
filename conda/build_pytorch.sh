@@ -49,10 +49,10 @@ else
     build_version="$2"
     build_number="$3"
 fi
-if [[ "$desired_cuda" != cpu ]]; then
+if [[ "$desired_cuda" == "*cuda*" ]]; then
   desired_cuda="$(echo $desired_cuda | tr -d cuda. )"
 fi
-echo "Building cuda version $desired_cuda and pytorch version: $build_version build_number: $build_number"
+echo "Building version $DESIRED_CUDA and pytorch version: $build_version build_number: $build_number"
 
 if [[ "$OSTYPE" == "msys" && "$CIRCLECI" == 'true' ]]; then
     export PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin:.:$PATH"
@@ -208,6 +208,8 @@ else
         build_folder='pytorch'
     elif [[ -n "$cpu_only" ]]; then
         build_folder='pytorch-cpu'
+    elif [[ "$desired_cuda" == "*rocm*" ]]; then
+        build_folder="pytorch-$desired_cuda"
     else
         build_folder="pytorch-$cuda_nodot"
     fi
@@ -234,6 +236,25 @@ if [[ -n "$cpu_only" ]]; then
     fi
     # on Linux, advertise that the package sets the cpuonly feature
     export CONDA_CPU_ONLY_FEATURE="    - cpuonly # [not osx]"
+elif [[ "$desired_cuda" == "*rocm*" ]]; then
+    # Switch the ROCm version that /opt/rocm points to. This script also
+    # sets ROCM_VERSION
+    echo "Switching to ROCm version $desired_cuda"
+    desired_rocm="$(echo $desired_cuda | tr -d rocm)"
+    desired_rocm_dot_count="$(echo $desired_cuda | tr -d -c '.' | wc -c)"
+    if [[ "$desired_rocm_dot_count" = 1 ]]; then
+        ROCM_DIR="/opt/rocm-${desired_rocm}.0"
+    elif [[ "$desired_rocm_dot_count" = 2 ]]; then
+        ROCM_DIR="/opt/rocm-${desired_rocm}"
+    else
+        echo "unhandled desired_rocm_dot_count: $desired_rocm_dot_count ($desired_rocm)"
+        exit 1
+    fi
+    rm -fr /opt/rocm
+    ln -s "$ROCM_DIR" /opt/rocm
+    export ROCM_VERSION="$desired_rocm"
+    export CONDA_CPU_ONLY_FEATURE=""
+    build_string_suffix="rocm${ROCM_VERSION}_${build_string_suffix}"
 else
     # Switch the CUDA version that /usr/local/cuda points to. This script also
     # sets CUDA_VERSION and CUDNN_VERSION
@@ -357,6 +378,8 @@ for py_ver in "${DESIRED_PYTHON[@]}"; do
     pushd "$pytorch_rootdir"
     if [[ "$cpu_only" == 1 ]]; then
         "${SOURCE_DIR}/../run_tests.sh" 'conda' "$py_ver" 'cpu'
+    elif [[ "$desired_cuda" == "*rocm*" ]]; then
+        ; # TODO
     else
         "${SOURCE_DIR}/../run_tests.sh" 'conda' "$py_ver" "cu$cuda_nodot"
     fi
