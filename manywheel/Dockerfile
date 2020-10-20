@@ -132,10 +132,10 @@ COPY --from=magma    /usr/local/cuda-${BASE_CUDA_VERSION}  /usr/local/cuda-${BAS
 FROM common as rocm_final
 ARG ROCM_VERSION=3.7
 # Install ROCm
-ADD ./common/install_rocm.sh install_rocm.sh
-RUN bash ./install_rocm.sh ${ROCM_VERSION} && rm install_rocm.sh
 # cmake is already installed inside the rocm base image, but both 2 and 3 exist
 RUN yum install -y cmake3 && \
     rm -f /usr/bin/cmake && \
     ln -s /usr/bin/cmake3 /usr/bin/cmake
+ADD ./common/install_rocm.sh install_rocm.sh
+RUN bash ./install_rocm.sh ${ROCM_VERSION} && rm install_rocm.sh
 
