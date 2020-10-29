@@ -86,11 +86,36 @@ retry curl -fsSL https://raw.githubusercontent.com/ROCmSoftwarePlatform/half/mas
 yum install -y bzip2-devel
 
 ## Build MIOpen
-git clone https://github.com/ROCmSoftwarePlatform/MIOpen -b rocm-${ROCM_VERSION_NOPATCH}.x
+
+# MIOPEN_USE_HIP_KERNELS is a Workaround for COMgr issues
+MIOPEN_CMAKE_COMMON_FLAGS="
+-DMIOPEN_USE_COMGR=ON
+-DMIOPEN_USE_HIP_KERNELS=OFF
+-DMIOPEN_BACKEND=HIP
+-DMIOPEN_DISABLE_USERDB=ON
+-DMIOPEN_DISABLE_SYSDB=ON
+"
+
+## MIOpen versions 3.8 and later can embed the perf db
+if [[ ${ROCM_VERSION} == 3.7 ]]; then
+    MIOPEN_CMAKE_DB_FLAGS=
+elif [[ ${ROCM_VERSION} == 3.8 ]]; then
+    MIOPEN_CMAKE_DB_FLAGS="-DMIOPEN_EMBED_DB=gfx803_36;gfx803_64;gfx900_56;gfx900_64;gfx906_60;gfx906_64"
+else
+    MIOPEN_CMAKE_DB_FLAGS="-DMIOPEN_EMBED_DB=gfx803_36;gfx803_64;gfx900_56;gfx900_64;gfx906_60;gfx906_64"
+    #echo "Unhandled ROCM_VERSION ${ROCM_VERSION}"
+    #exit 1
+fi
+
+#git clone https://github.com/ROCmSoftwarePlatform/MIOpen -b rocm-${ROCM_VERSION_NOPATCH}.x
+git clone https://github.com/ROCmSoftwarePlatform/MIOpen
 pushd MIOpen
 mkdir -p build
 cd build
-PKG_CONFIG_PATH=/usr/local/lib/pkgconfig CXX=${ROCM_INSTALL_PATH}/llvm/bin/clang++ cmake .. -DMIOPEN_USE_COMGR=ON -DMIOPEN_BACKEND=HIP -DCMAKE_PREFIX_PATH="${ROCM_INSTALL_PATH}/hip;${ROCM_INSTALL_PATH}"
+PKG_CONFIG_PATH=/usr/local/lib/pkgconfig CXX=${ROCM_INSTALL_PATH}/llvm/bin/clang++ cmake .. \
+    ${MIOPEN_CMAKE_COMMON_FLAGS} \
+    ${MIOPEN_CMAKE_DB_FLAGS} \
+    -DCMAKE_PREFIX_PATH="${ROCM_INSTALL_PATH}/hip;${ROCM_INSTALL_PATH}"
 make MIOpen -j $(nproc)
 # Copy MIOpen library on top of package location, e.g., libMIOpen.so.1.0.30700
 cp lib/libMIOpen.so ${ROCM_INSTALL_PATH}/miopen/lib/libMIOpen.so.*.*
