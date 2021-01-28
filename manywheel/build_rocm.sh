@@ -156,6 +156,7 @@ DEPS_AUX_SRCLIST=(
     "/opt/rocm/rocblas/lib/library/TensileLibrary_gfx906.co"
     "/opt/rocm/rocblas/lib/library/TensileLibrary_gfx908.co"
     "/opt/rocm/rocblas/lib/library/$TENSILE_LIBRARY_NAME"
+    "/opt/rocm/hip/include/hip"
 )
 
 DEPS_AUX_DSTLIST=(
@@ -168,6 +169,7 @@ DEPS_AUX_DSTLIST=(
     "lib/library/TensileLibrary_gfx906.co"
     "lib/library/TensileLibrary_gfx908.co"
     "lib/library/$TENSILE_LIBRARY_NAME"
+    "include"
 )
 
 SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"

@@ -303,7 +303,7 @@ for pkg in /$WHEELHOUSE_DIR/torch*linux*.whl /$LIBTORCH_HOUSE_DIR/libtorch*.zip;
             srcpath=${DEPS_AUX_SRCLIST[i]}
             dstpath=$PREFIX/${DEPS_AUX_DSTLIST[i]}
             mkdir -p $(dirname $dstpath)
-            cp $srcpath $dstpath
+            cp -R $srcpath $dstpath
         done
     fi
 
